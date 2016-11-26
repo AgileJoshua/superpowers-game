@@ -56,25 +56,60 @@ namespace Sup {
       return player.gameInstance.input.mouseButtons[button].wasJustReleased;
     }
 
+    export function setTouchEmulatesMouse(emulate: boolean) {
+      player.gameInstance.input.touchEmulatesMouse = emulate; 
+    }
 
-    export function getTouchPosition(index) {
-      var position = player.gameInstance.input.touches[index].position;
+    export function getTouchPosition(identifier: number): Math.Vector2 {
+      let activeTouches =  player.gameInstance.input.touches.filter(t=>t.identifier === identifier);
+      if(activeTouches.length === 0) throw new Error("Invalid touch identifier");
+      //default to first touch - more than one touch is actually an error...
+      let position = activeTouches[0].position;
       return new Math.Vector2(position.x / player.canvas.clientWidth * 2 - 1, (position.y / player.canvas.clientHeight * 2 - 1) * -1);
     }
 
-    export function isTouchDown(index) {
-      if (player.gameInstance.input.touches[index] == null) { throw new Error("Invalid touch index"); }
-      return player.gameInstance.input.touches[index].isDown;
+    export function isTouchDown(identifier?: number): boolean {
+      if(identifier)
+        return player.gameInstance.input.touchesDown.indexOf(identifier) > -1;
+      else
+        return player.gameInstance.input.touchesDown.length > 0;
     }
 
-    export function wasTouchStarted(index) {
-      if (player.gameInstance.input.touches[index] == null) { throw new Error("Invalid touch index"); }
-      return player.gameInstance.input.touches[index].wasStarted;
+    export function wasTouchJustStarted(identifier?: number): boolean {
+      if(identifier)
+        return player.gameInstance.input.touchesStarted.indexOf(identifier) > -1;
+      else
+        return player.gameInstance.input.touchesStarted.length > 0;
     }
 
-    export function wasTouchEnded(index) {
-      if (player.gameInstance.input.touches[index] == null) { throw new Error("Invalid touch index"); }
-      return player.gameInstance.input.touches[index].wasEnded;
+    export function wasTouchJustEnded(identifier?: number): boolean {
+      if(identifier)
+        return player.gameInstance.input.touchesEnded.indexOf(identifier) > -1;
+      else
+        return player.gameInstance.input.touchesEnded.length > 0;
+    }
+
+    export function wasTouchJustMoved(identifier?: number): boolean { 
+      if(identifier)
+        return player.gameInstance.input.touchesMoved.indexOf(identifier) > -1;
+      else
+        return player.gameInstance.input.touchesMoved.length > 0;
+    }
+
+    export function getTouchesStarted(): number[] {
+      return player.gameInstance.input.touchesStarted;
+    }
+
+    export function getTouchesEnded(): number[] {
+      return player.gameInstance.input.touchesEnded;
+    }
+
+    export function getTouchesMoved(): number[] {
+      return player.gameInstance.input.touchesMoved;
+    }
+
+    export function getTouchesDown(): number[] {
+      return player.gameInstance.input.touchesDown;
     }
 
     export function vibrate(pattern) { window.navigator.vibrate(pattern); }

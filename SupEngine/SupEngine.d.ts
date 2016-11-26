@@ -173,9 +173,8 @@ declare namespace SupEngine {
   }
 
   class Input {
-    static maxTouches: number;
-
     exited: boolean;
+
     canvas: HTMLCanvasElement;
 
     mouseButtons: MouseButtonState[];
@@ -186,7 +185,12 @@ declare namespace SupEngine {
     newScrollDelta: number;
 
     touches: TouchState[];
-    touchesDown: boolean[];
+    touchesDown: number[];
+    touchesStarted: number[];
+    touchesEnded: number[];
+    touchesMoved: number[];
+    mouseTouchIdentifier: number;
+    touchEmulatesMouse: boolean;
 
     keyboardButtons: KeyState[];
     keyboardButtonsDown: boolean[];
