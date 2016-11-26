@@ -18,7 +18,9 @@ interface TouchState {
   isDown: boolean;
   wasStarted: boolean;
   wasEnded: boolean;
+  wasMoved: boolean;
   position: { x: number; y: number; };
+  identifier: number;
 }
 
 interface GamepadButtonState {
@@ -45,8 +47,6 @@ interface GamepadAutoRepeat {
 }
 
 export default class Input extends EventEmitter {
-  static maxTouches = 10;
-
   canvas: HTMLCanvasElement;
 
   mouseButtons: MouseButtonState[] = [];
@@ -58,7 +58,12 @@ export default class Input extends EventEmitter {
   newScrollDelta: number;
 
   touches: TouchState[] = [];
-  touchesDown: boolean[] = [];
+  touchesDown: number[] = [];
+  touchesStarted: number[] = [];
+  touchesEnded: number[] = [];
+  touchesMoved: number[] = [];
+  mouseTouchIdentifier: number = null;
+  touchEmulatesMouse = false;
 
   keyboardButtons: KeyState[] = [];
   keyboardButtonsDown: boolean[] = [];
@@ -193,10 +198,12 @@ export default class Input extends EventEmitter {
     this.newMouseDelta.y = 0;
 
     // Touch
-    for (let i = 0; i < Input.maxTouches; i++) {
-      this.touches[i] = { isDown: false, wasStarted: false, wasEnded: false, position: { x: 0, y: 0} };
-      this.touchesDown[i] = false;
-    }
+    this.touchesDown = [];
+    this.touches = [];
+    this.touchesEnded = [];
+    this.touchesStarted = [];
+    this.touchesMoved = [];
+    this.mouseTouchIdentifier = null;
 
     // Keyboard
     for (let i = 0; i <= 255; i++) {
@@ -371,43 +378,74 @@ export default class Input extends EventEmitter {
   private onTouchStart = (event: any) => {
     event.preventDefault();
 
+    if (this.touchEmulatesMouse && this.mouseTouchIdentifier == null &&
+      this.touchesDown.length === 0 && event.changedTouches.length > 0) {
+      // track first touch as mouse
+      this.mouseTouchIdentifier = event.changedTouches[0].identifier;
+    }
+
     const rect = event.target.getBoundingClientRect();
+    const changedTouchesArray: any[] = [];
+
     for (let i = 0; i < event.changedTouches.length; i++) {
-      const touch = event.changedTouches[i];
-      this.touches[touch.identifier].position.x = touch.clientX - rect.left;
-      this.touches[touch.identifier].position.y = touch.clientY - rect.top;
+      changedTouchesArray.push(event.changedTouches[i]);
+    }
 
-      this.touchesDown[touch.identifier] = true;
+    changedTouchesArray.forEach(touch => {
+      const touchInput: TouchState =
+        { identifier: touch.identifier, wasStarted: true, wasEnded: false, wasMoved: false, isDown: false, position: { x: touch.clientX - rect.left, y: touch.clientY - rect.top } };
 
-      if (touch.identifier === 0) {
-        this.newMousePosition = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+      this.touches.push(touchInput);
+
+      if (this.touchEmulatesMouse && touch.identifier === this.mouseTouchIdentifier) {
+        this.newMousePosition = touch.position;
         this.mouseButtonsDown[0] = true;
       }
-    }
+    });
   };
 
   private onTouchEnd = (event: any) => {
     event.preventDefault();
 
+    const rect = event.target.getBoundingClientRect();
+    const touchUpdates: any[] = [];
+
     for (let i = 0; i < event.changedTouches.length; i++) {
       const touch = event.changedTouches[i];
-      this.touchesDown[touch.identifier] = false;
-      if (touch.identifier === 0) this.mouseButtonsDown[0] = false;
+      touchUpdates.push(touch);
     }
+
+    touchUpdates.forEach(touch => {
+      const touchesToChange = this.touches.filter(t => t.identifier === touch.identifier);
+      touchesToChange.forEach(t => {
+        t.wasEnded = true;
+        t.position.x = touch.clientX - rect.left;
+        t.position.y = touch.clientY - rect.top;
+        if (this.touchEmulatesMouse && t.identifier === this.mouseTouchIdentifier) this.mouseButtonsDown[0] = false;
+      });
+    });
   };
 
   private onTouchMove = (event: any) => {
     event.preventDefault();
 
     const rect = event.target.getBoundingClientRect();
+    const touchUpdates: any[] = [];
 
     for (let i = 0; i < event.changedTouches.length; i++) {
       const touch = event.changedTouches[i];
-      this.touches[touch.identifier].position.x = touch.clientX - rect.left;
-      this.touches[touch.identifier].position.y = touch.clientY - rect.top;
-
-      if (touch.identifier === 0) this.newMousePosition = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+      touchUpdates.push(touch);
     }
+
+    touchUpdates.forEach(touch => {
+      const touchesToChange = this.touches.filter(t => t.identifier === touch.identifier);
+      touchesToChange.forEach(t => {
+        t.wasMoved = true;
+        t.position.x = touch.clientX - rect.left;
+        t.position.y = touch.clientY - rect.top;
+        if (this.touchEmulatesMouse && t.identifier === this.mouseTouchIdentifier) this.mousePosition = t.position;
+      });
+    });
   };
 
   // TODO: stop using keyCode when KeyboardEvent.code is supported more widely
@@ -474,14 +512,46 @@ export default class Input extends EventEmitter {
       mouseButton.wasJustReleased = wasDown && !mouseButton.isDown;
     }
 
-    for (let i = 0; i < this.touches.length; i++) {
-      const touch = this.touches[i];
-      const wasDown = touch.isDown;
-      touch.isDown = this.touchesDown[i];
+    const touchesToRemove: TouchState[] = [];
+    this.touchesEnded = [];
+    this.touchesStarted = [];
+    this.touchesMoved = [];
+    this.touchesDown = [];
 
-      touch.wasStarted = !wasDown && touch.isDown;
-      touch.wasEnded = wasDown && !touch.isDown;
+    if(this.touches.length > 0) {
+      this.touches.forEach(touch => {
+        touch.wasStarted = touch.wasStarted && !touch.isDown;
+        touch.isDown = (touch.wasStarted || touch.isDown);
+
+        if(touch.isDown){
+            this.touchesDown.push(touch.identifier);
+        }
+
+        if (touch.wasStarted) {
+            this.touchesStarted.push(touch.identifier);
+        }
+
+        if(touch.wasMoved){
+            this.touchesMoved.push(touch.identifier);
+        }
+
+        if (touch.wasEnded) {
+            if (touch.isDown) {
+              this.touchesEnded.push(touch.identifier);
+            }
+            else {
+              touchesToRemove.push(touch);
+            }
+            touch.isDown = false;
+        }
+      });
     }
+
+    touchesToRemove.forEach(ti => {
+      console.log(`Removing touch: ${ti.identifier}`);
+      const indexToRemove = this.touches.indexOf(ti);
+      if (indexToRemove > -1) this.touches.splice(indexToRemove, 1);
+    });
 
     for (let i = 0; i < this.keyboardButtons.length; i++) {
       const keyboardButton = this.keyboardButtons[i];

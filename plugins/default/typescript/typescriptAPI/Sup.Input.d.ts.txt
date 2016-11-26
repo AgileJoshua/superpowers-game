@@ -26,10 +26,17 @@ declare namespace Sup {
     function wasMouseButtonJustPressed(button: number): boolean;
     function wasMouseButtonJustReleased(button: number): boolean;
 
-    function getTouchPosition(index: number): Math.Vector2;
-    function isTouchDown(index: number): boolean;
-    function wasTouchStarted(index: number): boolean;
-    function wasTouchEnded(index: number): boolean;
+    function setTouchEmulatesMouse(emulate: boolean);
+    function getTouchPosition(identifier: number): Math.Vector2;
+    function isTouchDown(identifier?: number): boolean;
+    function wasTouchJustStarted(identifier?: number): boolean;
+    function wasTouchJustEnded(identifier?: number): boolean;
+    function wasTouchJustMoved(identifier?: number): boolean;
+    function getTouchesStarted(): number[]; 
+    function getTouchesEnded(): number[]; 
+    function getTouchesMoved(): number[];
+    function getTouchesDown(): number[];
+
     function vibrate(pattern: number|number[]): void;
 
     // Valid key names (based on window.KeyEvent.DOM_VK_*):
