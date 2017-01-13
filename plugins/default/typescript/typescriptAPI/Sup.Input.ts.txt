@@ -69,28 +69,28 @@ namespace Sup {
     }
 
     export function isTouchDown(identifier?: number): boolean {
-      if(identifier)
+      if(identifier != null)
         return player.gameInstance.input.touchesDown.indexOf(identifier) > -1;
       else
         return player.gameInstance.input.touchesDown.length > 0;
     }
 
     export function wasTouchJustStarted(identifier?: number): boolean {
-      if(identifier)
+      if(identifier != null)
         return player.gameInstance.input.touchesStarted.indexOf(identifier) > -1;
       else
         return player.gameInstance.input.touchesStarted.length > 0;
     }
 
     export function wasTouchJustEnded(identifier?: number): boolean {
-      if(identifier)
+      if(identifier != null)
         return player.gameInstance.input.touchesEnded.indexOf(identifier) > -1;
       else
         return player.gameInstance.input.touchesEnded.length > 0;
     }
 
     export function wasTouchJustMoved(identifier?: number): boolean { 
-      if(identifier)
+      if(identifier != null)
         return player.gameInstance.input.touchesMoved.indexOf(identifier) > -1;
       else
         return player.gameInstance.input.touchesMoved.length > 0;

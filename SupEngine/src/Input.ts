@@ -378,9 +378,9 @@ export default class Input extends EventEmitter {
   private onTouchStart = (event: any) => {
     event.preventDefault();
 
-    if (this.touchEmulatesMouse && this.mouseTouchIdentifier == null && 
-      this.touchesDown.length == 0 && event.changedTouches.length > 0) {
-      //track first touch as mouse
+    if (this.touchEmulatesMouse && this.mouseTouchIdentifier == null &&
+      this.touchesDown.length === 0 && event.changedTouches.length > 0) {
+      // track first touch as mouse
       this.mouseTouchIdentifier = event.changedTouches[0].identifier;
     }
 
@@ -392,7 +392,7 @@ export default class Input extends EventEmitter {
     }
 
     changedTouchesArray.forEach(touch => {
-      const touchInput: TouchState = 
+      const touchInput: TouchState =
         { identifier: touch.identifier, wasStarted: true, wasEnded: false, wasMoved: false, isDown: false, position: { x: touch.clientX - rect.left, y: touch.clientY - rect.top } };
 
       this.touches.push(touchInput);
@@ -428,10 +428,10 @@ export default class Input extends EventEmitter {
 
   private onTouchMove = (event: any) => {
     event.preventDefault();
-    
+
     const rect = event.target.getBoundingClientRect();
     const touchUpdates: any[] = [];
-    
+
     for (let i = 0; i < event.changedTouches.length; i++) {
       const touch = event.changedTouches[i];
       touchUpdates.push(touch);
@@ -516,7 +516,7 @@ export default class Input extends EventEmitter {
     this.touchesEnded = [];
     this.touchesStarted = [];
     this.touchesMoved = [];
-    this.touchesDown =[];
+    this.touchesDown = [];
 
     if(this.touches.length > 0) {
       this.touches.forEach(touch => {
@@ -548,6 +548,7 @@ export default class Input extends EventEmitter {
     }
 
     touchesToRemove.forEach(ti => {
+      console.log(`Removing touch: ${ti.identifier}`);
       const indexToRemove = this.touches.indexOf(ti);
       if (indexToRemove > -1) this.touches.splice(indexToRemove, 1);
     });
